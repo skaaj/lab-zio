@@ -1,6 +1,6 @@
 package lab.skaaj
 
-import zio.{ZIO, ZIOAppDefault}
+import zio._
 
 object P2_ErrorHandling extends ZIOAppDefault {
 
@@ -10,6 +10,13 @@ object P2_ErrorHandling extends ZIOAppDefault {
 
   // 1 - make this effect fail with a typed error
   val aBadFailure = ZIO.succeed[Int](throw new RuntimeException("oops"))
+  val aBetterFailure = aBadFailure
+    .catchSomeDefect {
+      case e: RuntimeException => ZIO.fail(e)
+    }
+  val anotherBetterFailure = aBadFailure.unrefine {
+    case e: RuntimeException => e
+  }
 
-  def run = aBadFailure
+  def run = anotherBetterFailure
 }
