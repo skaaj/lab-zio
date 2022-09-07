@@ -2,7 +2,7 @@ package lab.skaaj
 
 import zio._
 
-object P2_ErrorHandling extends ZIOAppDefault {
+object P1_ErrorHandling extends ZIOAppDefault {
 
   /**
    * Exercices

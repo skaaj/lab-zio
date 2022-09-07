@@ -1,69 +1,45 @@
 package lab.skaaj
 
-import zio._
-
 import scala.io.StdIn
 
-object P1_Effects extends ZIOAppDefault {
+object P1_Effects extends App {
 
-  /**
-   * Exercices
-   */
+  case class ToyIO[A](unsafeRun: () => A) {
+    def map[B](f: A => B): ToyIO[B] =
+      ToyIO(() => f(unsafeRun()))
 
-  // 1
-  def sequenceTakeLast[R, E, A, B](zioa: ZIO[R, E, A], ziob: ZIO[R, E, B]): ZIO[R, E, B] =
-    for {
-      va <- zioa
-      vb <- ziob
-    } yield vb
-
-  // 2
-  def sequenceTakeFirst[R, E, A, B](zioa: ZIO[R, E, A], ziob: ZIO[R, E, B]): ZIO[R, E, A] =
-    for {
-      va <- zioa
-      vb <- ziob
-    } yield va
-
-  // 3
-  def runForever[R, E, A](zio: ZIO[R, E, A]): ZIO[R, E, A] =
-    zio.flatMap(_ => runForever(zio))
-
-  val endlessLoop = runForever {
-    ZIO.succeed {
-      println("running...")
-      //Thread.sleep(1000)
-    }
+    def flatMap[B](f: A => ToyIO[B]): ToyIO[B] =
+      ToyIO(() => f(unsafeRun()).unsafeRun())
   }
 
-  // 4
-  def convert[R, E, A, B](zio: ZIO[R, E, A], value: B): ZIO[R, E, B] =
-    for {
-      _ <- zio
-    } yield value
+  /**
+   * Exercises - create some IO which
+   *  1. measure the current time of the system
+   *  2. measure the duration of a computation
+   *    - use exercise 1
+   *    - use map/flatMap combinations of MyIO
+   *  3. read something from the console
+   *  4. print something to the console (e.g. "what's your name"), then read, then print a welcome message
+   */
 
-  // 5
-  def discard[R, E, A](zio: ZIO[R, E, A]): ZIO[R, E, Unit] = convert(zio, ())
+  def getCurrentTime: ToyIO[Long] = ToyIO(() => System.currentTimeMillis())
 
-  // 6
-  def sum(n: Int): Int =
-    if n == 0 then 0 else n + sum(n - 1)
+  def measureTime[A](computation: ToyIO[A]): ToyIO[(Long, A)] = for {
+    startTime <- getCurrentTime
+    result <- computation
+    endTime <- getCurrentTime
+  } yield (endTime - startTime, result)
 
-  def sumZIO(n: Int): UIO[Int] =
-    if n == 0 then ZIO.succeed(0)
-    else for {
-      current <- ZIO.succeed(n)
-      next <- sumZIO(n - 1)
-    } yield current + next
+  def readConsole: ToyIO[String] = ToyIO(() => StdIn.readLine())
 
-  // 7
-  // hint: use ZIO.suspend/ZIO.suspendSucceed
-  def fiboZIO(n: Int): UIO[BigInt] =
-    if n <= 1 then ZIO.succeed(n)
-    else for {
-      _ <- ZIO.succeed(314)
-      n_1 <- fiboZIO(n - 1)
-      n_2 <- fiboZIO(n - 2)
-    } yield n_1 + n_2
+  def writeConsole(text: String): ToyIO[Unit] = ToyIO(() => println(text))
 
-  def run = fiboZIO(6).flatMap(x => ZIO.succeed(println(x)))
+  // Running all together
+  val program = for {
+    _ <- writeConsole("beginning")
+    result <- measureTime(readConsole)
+    _ <- writeConsole(s"you entered '${result._2}' in ${result._1} ms")
+  } yield ()
+
+  program.unsafeRun()
 }
