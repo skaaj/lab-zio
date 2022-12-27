@@ -1,10 +1,8 @@
-package lab.skaaj
+package lab.skaaj.part2effects
 
-import zio._
+import zio.*
 
-import scala.io.StdIn
-
-object P1_ZIO extends ZIOAppDefault {
+object ZIOIntro extends ZIOAppDefault {
 
   /**
    * Exercices

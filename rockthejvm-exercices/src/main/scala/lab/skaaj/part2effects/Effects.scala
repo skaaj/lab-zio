@@ -1,8 +1,8 @@
-package lab.skaaj
+package lab.skaaj.part2effects
 
 import scala.io.StdIn
 
-object P1_Effects extends App {
+object Effects extends App {
 
   case class ToyIO[A](unsafeRun: () => A) {
     def map[B](f: A => B): ToyIO[B] =
@@ -15,11 +15,11 @@ object P1_Effects extends App {
   /**
    * Exercises - create some IO which
    *  1. measure the current time of the system
-   *  2. measure the duration of a computation
+   *     2. measure the duration of a computation
    *    - use exercise 1
    *    - use map/flatMap combinations of MyIO
-   *  3. read something from the console
-   *  4. print something to the console (e.g. "what's your name"), then read, then print a welcome message
+   *      3. read something from the console
+   *      4. print something to the console (e.g. "what's your name"), then read, then print a welcome message
    */
 
   def getCurrentTime: ToyIO[Long] = ToyIO(() => System.currentTimeMillis())
