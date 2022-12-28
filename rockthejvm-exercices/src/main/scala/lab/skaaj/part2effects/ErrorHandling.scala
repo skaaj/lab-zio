@@ -25,7 +25,7 @@ object ErrorHandling extends ZIOAppDefault {
   def fromEither[E, A](x: Either[E, A]): IO[E, A] =
     x.fold(ZIO.fail(_), ZIO.succeed(_))
 
-  def either[E, A](zio: IO[E, A]): IO[Nothing, Either[E, A]] =
+  def either[E, A](zio: IO[E, A]): UIO[Either[E, A]] =
     zio.foldZIO(
       error => ZIO.succeed(Left(error)),
       value => ZIO.succeed(Right(value))
@@ -38,8 +38,11 @@ object ErrorHandling extends ZIOAppDefault {
     }
 
   // 1 - make this effect fail with a typed error
-  val aBadFailure = ZIO.succeed[Int](throw new RuntimeException("oops"))
-  val aBetterFailure = aBadFailure.unrefine({ case e => e })
+  private val aBadFailure: UIO[Int] =
+    ZIO.succeed[Int](throw new RuntimeException("oops"))
+
+  private val aBetterFailure: IO[RuntimeException, Int] =
+    aBadFailure.unrefine { case e: RuntimeException => e }
 
   // 2 - transform a zio into another zio with a narrower exception type
   def ioException[R, A](zio: ZIO[R, Throwable, A]): ZIO[R, IOException, A] =
@@ -52,16 +55,15 @@ object ErrorHandling extends ZIOAppDefault {
     zio.right.mapError(_.swap)
 
   // 4
-  val database = Map(
+  private val database = Map(
     "daniel" -> 123,
     "alice" -> 789
   )
 
   case class QueryError(reason: String)
-
   case class UserProfile(name: String, phone: Int)
 
-  def lookupProfile(userId: String): ZIO[Any, QueryError, Option[UserProfile]] =
+  def lookupProfile(userId: String): IO[QueryError, Option[UserProfile]] =
     if (userId != userId.toLowerCase()) {
       ZIO.fail(QueryError("user ID format is invalid"))
     } else {
@@ -69,7 +71,7 @@ object ErrorHandling extends ZIOAppDefault {
     }
 
   // surface out all the failed cases of this API
-  def betterLookupProfile(userId: String): ZIO[Any, Option[QueryError], UserProfile] =
+  def betterLookupProfile(userId: String): IO[Option[QueryError], UserProfile] =
     if (userId != userId.toLowerCase()) {
       ZIO.fail(Some(QueryError("user ID format is invalid")))
     } else {
