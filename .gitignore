@@ -40,6 +40,7 @@ bin/
 .history
 .scala_dependencies
 .cache-main
+.g8
 
 # general
 *.class
